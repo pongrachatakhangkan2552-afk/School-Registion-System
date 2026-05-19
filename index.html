@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบลงทะเบียนชุมนุมและวิชาเพิ่มเติม</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Prompt', 'sans-serif'], },
+                    colors: { primary: 'var(--color-primary)', primaryDark: 'var(--color-primary-dark)', }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --color-primary: #3b82f6; 
+            --color-primary-dark: #2563eb;
+            --school-logo: url('https://placehold.co/100x100/3b82f6/ffffff?text=LOGO');
+        }
+        body { font-family: 'Prompt', sans-serif; background-color: #f3f4f6; margin: 0; overflow-x: hidden; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .hidden-view { display: none !important; }
+        .logo-display { background-image: var(--school-logo); background-size: cover; background-position: center; }
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="text-gray-800 h-screen flex flex-col">
+
+    <!-- ==================== LOGIN VIEW ==================== -->
+    <div id="view-login" class="flex-1 flex items-center justify-center bg-gray-50 p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md fade-in text-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-primary"></div>
+            <div class="w-24 h-24 mx-auto rounded-full logo-display mb-4 shadow-md border-4 border-white"></div>
+            <h1 id="login-school-name" class="text-2xl font-bold text-gray-800 mb-2">กำลังโหลดระบบ...</h1>
+            <p class="text-gray-500 mb-6 text-sm">ระบบลงทะเบียนชุมนุมและวิชาเพิ่มเติม</p>
+            
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">เลขประจำตัวประชาชน</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-id-card text-gray-400"></i>
+                        </div>
+                        <input type="text" id="login-id" maxlength="13" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition" placeholder="กรอกเลข 13 หลัก">
+                    </div>
+                </div>
+                <button onclick="handleLogin()" id="btn-login" disabled class="w-full bg-primary hover:bg-primaryDark text-white font-medium py-3 rounded-lg transition shadow-md hover:shadow-lg transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                    กำลังเชื่อมต่อเซิร์ฟเวอร์...
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN APP LAYOUT ==================== -->
+    <div id="view-app" class="hidden-view flex-1 flex h-screen overflow-hidden bg-gray-100">
+        
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white shadow-xl flex flex-col z-20 transition-all duration-300 relative" id="sidebar">
+            <div class="p-5 flex items-center gap-3 border-b border-gray-100">
+                <div class="w-10 h-10 rounded-full logo-display flex-shrink-0 shadow-sm"></div>
+                <div class="overflow-hidden">
+                    <h2 class="font-bold text-gray-800 truncate" id="sidebar-school-name">โรงเรียน</h2>
+                    <p class="text-xs text-primary font-medium" id="sidebar-role-badge">สถานะ</p>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto py-4">
+                <!-- Admin Menus -->
+                <ul id="menu-admin" class="space-y-1 px-3 hidden-view">
+                    <li><button onclick="navigate('admin-clubs')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm rounded-xl text-gray-600 hover:bg-gray-50 transition"><i class="fa-solid fa-users w-5"></i> 1. จัดการชุมนุม</button></li>
+                    <li><button onclick="navigate('admin-electives')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm rounded-xl text-gray-600 hover:bg-gray-50 transition"><i class="fa-solid fa-book w-5"></i> 2. จัดการวิชาเพิ่มเติม</button></li>
+                    <li><button onclick="navigate('admin-students')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm rounded-xl text-gray-600 hover:bg-gray-50 transition"><i class="fa-solid fa-user-graduate w-5"></i> 3. ฐานข้อมูลนักเรียน</button></li>
+                    <li><button onclick="navigate('admin-permissions')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm rounded-xl text-gray-600 hover:bg-gray-50 transition"><i class="fa-solid fa-key w-5"></i> 4. กำหนดสิทธิ์ลงทะเบียน</button></li>
+                    <li><button onclick="navigate('admin-downloads')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm rounded-xl text-gray-600 hover:bg-gray-50 transition"><i class="fa-solid fa-file-pdf w-5"></i> 5. ดาวน์โหลดสมุด</button></li>
+                    <li><button onclick="navigate('admin-settings')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm rounded-xl text-gray-600 hover:bg-gray-50 transition"><i class="fa-solid fa-cog w-5"></i> 6. ตั้งค่าระบบ</button></li>
+                </ul>
+
+                <!-- Student Menus -->
+                <ul id="menu-student" class="space-y-1 px-3 hidden-view">
+                    <li><button onclick="navigate('student-clubs')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm rounded-xl text-gray-600 hover:bg-gray-50 transition"><i class="fa-solid fa-users w-5"></i> 1. ลงทะเบียนชุมนุม</button></li>
+                    <li><button onclick="navigate('student-electives')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm rounded-xl text-gray-600 hover:bg-gray-50 transition"><i class="fa-solid fa-book-open w-5"></i> 2. ลงทะเบียนวิชาเพิ่มเติม</button></li>
+                    <li><button onclick="navigate('student-my-courses')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm rounded-xl text-gray-600 hover:bg-gray-50 transition"><i class="fa-solid fa-clipboard-list w-5"></i> 3. ข้อมูลของฉัน</button></li>
+                </ul>
+            </div>
+
+            <div class="p-4 border-t border-gray-100">
+                <div class="mb-3 px-2">
+                    <p class="text-xs text-gray-500">เข้าสู่ระบบโดย:</p>
+                    <p class="text-sm font-medium text-gray-800 truncate" id="current-user-name">ชื่อ นามสกุล</p>
+                </div>
+                <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
+                    <i class="fa-solid fa-sign-out-alt"></i> ออกจากระบบ
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col h-full overflow-hidden relative">
+            <header class="md:hidden bg-white shadow-sm p-4 flex items-center justify-between z-10">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full logo-display shadow-sm"></div>
+                    <h2 class="font-bold text-gray-800 truncate text-sm" id="mobile-school-name">โรงเรียน</h2>
+                </div>
+                <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('sidebar').classList.toggle('absolute');" class="p-2 text-gray-600 rounded-lg hover:bg-gray-100">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 w-full max-w-6xl mx-auto" id="content-area">
+                
+                <!-- ADMIN: CLUBS -->
+                <section id="page-admin-clubs" class="page-section hidden-view fade-in">
+                    <div class="flex justify-between items-end mb-6">
+                        <div><h2 class="text-2xl font-bold text-gray-800">จัดการรายวิชาชุมนุม</h2><p class="text-gray-500 text-sm">เพิ่ม ลบ แก้ไข ข้อมูลชุมนุม</p></div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+                        <h3 class="font-semibold text-gray-800 mb-4 border-b pb-2">เพิ่มชุมนุมใหม่</h3>
+                        <form id="form-add-club" onsubmit="adminAddClub(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label class="block text-xs text-gray-500 mb-1">รหัสชุมนุม (อัตโนมัติ)</label><input type="text" id="club-id" disabled class="w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 text-gray-500"></div>
+                            <div><label class="block text-xs text-gray-700 mb-1">ชื่อชุมนุม <span class="text-red-500">*</span></label><input type="text" id="club-name" required class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none"></div>
+                            <div><label class="block text-xs text-gray-700 mb-1">รหัสนักเรียนผู้ขอเปิด</label><input type="text" id="club-req-id" oninput="autoFillStudentInfo(this.value)" placeholder="ค้นหาอัตโนมัติ" class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none"></div>
+                            <div><label class="block text-xs text-gray-700 mb-1">ชื่อ-สกุล นักเรียนผู้ขอเปิด</label><input type="text" id="club-req-name" required class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none"></div>
+                            <div><label class="block text-xs text-gray-700 mb-1">ชั้นเรียนผู้ขอเปิด</label><input type="text" id="club-req-class" required class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none"></div>
+                            <div><label class="block text-xs text-gray-700 mb-1">ชื่อคุณครูประจำชุมนุม <span class="text-red-500">*</span></label><input type="text" id="club-teacher" required class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none"></div>
+                            <div><label class="block text-xs text-gray-700 mb-1">จำนวนรับสูงสุด <span class="text-red-500">*</span></label><input type="number" id="club-max" min="1" required class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none"></div>
+                            <div class="md:col-span-2 flex justify-end mt-2"><button type="submit" id="btn-save-club" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primaryDark transition shadow-sm">บันทึกข้อมูล</button></div>
+                        </form>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead><tr class="bg-gray-50 border-b border-gray-200 text-sm text-gray-600"><th class="p-4 font-medium">รหัส</th><th class="p-4 font-medium">ชื่อชุมนุม</th><th class="p-4 font-medium">จำนวนรับ</th><th class="p-4 font-medium">ครูประจำชุมนุม</th><th class="p-4 font-medium text-center w-24">จัดการ</th></tr></thead><tbody id="table-admin-clubs" class="text-sm divide-y divide-gray-100"></tbody></table></div></div>
+                </section>
+
+                <!-- ADMIN: ELECTIVES -->
+                <section id="page-admin-electives" class="page-section hidden-view fade-in">
+                    <div class="flex justify-between items-end mb-6"><div><h2 class="text-2xl font-bold text-gray-800">จัดการรายวิชาเพิ่มเติม</h2><p class="text-gray-500 text-sm">เพิ่ม ลบ รายวิชาเพิ่มเติมตามกลุ่มสาระ</p></div></div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+                        <h3 class="font-semibold text-gray-800 mb-4 border-b pb-2">เพิ่มรายวิชาใหม่</h3>
+                        <form id="form-add-elective" onsubmit="adminAddElective(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-700 mb-1">สังกัดวิชา <span class="text-red-500">*</span></label>
+                                <select id="elec-category" onchange="generateElectiveCode()" required class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none bg-white">
+                                    <option value="" disabled selected>เลือกสังกัดวิชา</option>
+                                    <option value="ไทย">ภาษาไทย</option><option value="อังกฤษ">ภาษาต่างประเทศ (อังกฤษ)</option>
+                                    <option value="คณิต">คณิตศาสตร์</option><option value="วิทย์">วิทยาศาสตร์</option>
+                                    <option value="ศิลปะ">ศิลปะ</option><option value="การงานอาชีพ">การงานอาชีพ</option>
+                                    <option value="พละสุขศึกษา">สุขศึกษาและพลศึกษา</option>
+                                </select>
+                            </div>
+                            <div><label class="block text-xs text-gray-500 mb-1">รหัสวิชา (อัตโนมัติ)</label><input type="text" id="elec-id" disabled placeholder="เลือกสังกัดวิชาเพื่อสร้างรหัส" class="w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 text-gray-500"></div>
+                            <div class="md:col-span-2"><label class="block text-xs text-gray-700 mb-1">ชื่อรายวิชา <span class="text-red-500">*</span></label><input type="text" id="elec-name" required class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none"></div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs text-gray-700 mb-1">ระดับชั้นที่สามารถลงเรียนได้ (เลือกได้มากกว่า 1) <span class="text-red-500">*</span></label>
+                                <div class="flex flex-wrap gap-4 mt-2 bg-gray-50 p-3 rounded-lg border border-gray-200" id="elec-target-classes">
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-1 rounded"><input type="checkbox" value="ม.1" class="w-4 h-4 text-primary rounded focus:ring-primary"> ม.1</label>
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-1 rounded"><input type="checkbox" value="ม.2" class="w-4 h-4 text-primary rounded focus:ring-primary"> ม.2</label>
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-1 rounded"><input type="checkbox" value="ม.3" class="w-4 h-4 text-primary rounded focus:ring-primary"> ม.3</label>
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-1 rounded"><input type="checkbox" value="ม.4" class="w-4 h-4 text-primary rounded focus:ring-primary"> ม.4</label>
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-1 rounded"><input type="checkbox" value="ม.5" class="w-4 h-4 text-primary rounded focus:ring-primary"> ม.5</label>
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-1 rounded"><input type="checkbox" value="ม.6" class="w-4 h-4 text-primary rounded focus:ring-primary"> ม.6</label>
+                                </div>
+                            </div>
+                            <div><label class="block text-xs text-gray-700 mb-1">ชื่อคุณครูผู้สอน <span class="text-red-500">*</span></label><input type="text" id="elec-teacher" required class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none"></div>
+                            <div><label class="block text-xs text-gray-700 mb-1">จำนวนรับสูงสุด <span class="text-red-500">*</span></label><input type="number" id="elec-max" min="1" required class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none"></div>
+                            <div class="md:col-span-2 flex justify-end mt-2"><button type="submit" id="btn-save-elec" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primaryDark transition shadow-sm">ยืนยัน</button></div>
+                        </form>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead><tr class="bg-gray-50 border-b border-gray-200 text-sm text-gray-600"><th class="p-4 font-medium">รหัสวิชา</th><th class="p-4 font-medium">ชื่อวิชา</th><th class="p-4 font-medium">หมวดหมู่</th><th class="p-4 font-medium">จำนวนรับ</th><th class="p-4 font-medium">ครูผู้สอน</th><th class="p-4 font-medium text-center w-24">จัดการ</th></tr></thead><tbody id="table-admin-electives" class="text-sm divide-y divide-gray-100"></tbody></table></div></div>
+                </section>
+
+                <!-- ADMIN: STUDENTS -->
+                <section id="page-admin-students" class="page-section hidden-view fade-in">
+                    <div class="flex justify-between items-end mb-6"><div><h2 class="text-2xl font-bold text-gray-800">ฐานข้อมูลนักเรียน</h2><p class="text-gray-500 text-sm">เพิ่มข้อมูลนักเรียนสำหรับเข้าสู่ระบบ</p></div></div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+                        <h3 class="font-semibold text-gray-800 mb-4 border-b pb-2">เพิ่มข้อมูลนักเรียน</h3>
+                        <form id="form-add-student" onsubmit="adminAddStudent(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="md:col-span-2"><label class="block text-xs text-gray-700 mb-1">เลขประจำตัวประชาชน (ใช้เข้าสู่ระบบ) <span class="text-red-500">*</span></label><input type="text" id="stu-national-id" maxlength="13" required class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none"></div>
+                            <div><label class="block text-xs text-gray-700 mb-1">รหัสนักเรียน <span class="text-red-500">*</span></label><input type="text" id="stu-id" required class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none"></div>
+                            <div class="md:col-span-3"><label class="block text-xs text-gray-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label><input type="text" id="stu-name" required class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none"></div>
+                            <div><label class="block text-xs text-gray-700 mb-1">ระดับชั้น <span class="text-red-500">*</span></label><select id="stu-class" required class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none bg-white"><option value="ม.1">ม.1</option><option value="ม.2">ม.2</option><option value="ม.3">ม.3</option><option value="ม.4">ม.4</option><option value="ม.5">ม.5</option><option value="ม.6">ม.6</option></select></div>
+                            <div><label class="block text-xs text-gray-700 mb-1">ห้อง <span class="text-red-500">*</span></label><input type="number" id="stu-room" min="1" required class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none"></div>
+                            <div><label class="block text-xs text-gray-700 mb-1">เลขที่ <span class="text-red-500">*</span></label><input type="number" id="stu-no" min="1" required class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none"></div>
+                            <div class="md:col-span-3 flex justify-end mt-2"><button type="submit" id="btn-save-student" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primaryDark transition shadow-sm">เพิ่มข้อมูล</button></div>
+                        </form>
+                    </div>
+                    <div class="mb-4 flex gap-2 overflow-x-auto pb-2" id="student-class-filters"></div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"><table class="w-full text-left border-collapse"><thead><tr class="bg-gray-50 border-b border-gray-200 text-sm text-gray-600"><th class="p-4 font-medium">รหัสนักเรียน</th><th class="p-4 font-medium">ชื่อ-นามสกุล</th><th class="p-4 font-medium">ชั้น/ห้อง</th><th class="p-4 font-medium">เลขที่</th><th class="p-4 font-medium text-center w-24">จัดการ</th></tr></thead><tbody id="table-admin-students" class="text-sm divide-y divide-gray-100"></tbody></table></div>
+                </section>
+
+                <!-- ADMIN: PERMISSIONS -->
+                <section id="page-admin-permissions" class="page-section hidden-view fade-in">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+                        <div><h2 class="text-2xl font-bold text-gray-800">กำหนดสิทธิ์นักเรียน</h2><p class="text-gray-500 text-sm">อนุญาตให้แต่ละระดับชั้นลงทะเบียนได้ และตั้งค่าการถอนรายวิชา</p></div>
+                        <div class="flex flex-col gap-3">
+                            <div class="bg-white px-4 py-3 rounded-lg shadow-sm border border-gray-200 flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-700 mr-4">จำนวนวิชาเพิ่มเติมที่ต้องลง</span>
+                                <input type="number" id="perm-req-elec" min="1" max="10" value="3" class="w-16 px-2 py-1 text-center rounded border border-gray-300 focus:border-primary outline-none">
+                            </div>
+                            <div class="bg-white px-4 py-3 rounded-lg shadow-sm border border-gray-200">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <div class="relative">
+                                        <input type="checkbox" id="perm-allow-withdraw" class="sr-only">
+                                        <div class="block bg-gray-200 w-10 h-6 rounded-full transition" id="toggle-bg"></div>
+                                        <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition" id="toggle-dot"></div>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-700">อนุญาตให้นักเรียนถอนรายวิชาได้</span>
+                                </label>
+                                <style>input:checked ~ #toggle-bg { background-color: var(--color-primary); } input:checked ~ #toggle-dot { transform: translateX(100%); }</style>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <h3 class="font-semibold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-users text-primary"></i> สิทธิ์ลงทะเบียนชุมนุม</h3>
+                            <div class="space-y-3" id="perm-clubs-list"></div>
+                        </div>
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <h3 class="font-semibold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-book text-primary"></i> สิทธิ์ลงทะเบียนวิชาเพิ่มเติม</h3>
+                            <div class="space-y-3" id="perm-electives-list"></div>
+                        </div>
+                    </div>
+                    <button onclick="savePermissions()" id="btn-save-permissions" class="mt-6 w-full bg-primary text-white py-3 rounded-lg hover:bg-primaryDark transition font-medium shadow-sm">บันทึกสิทธิ์การลงทะเบียนทั้งหมด</button>
+                </section>
+
+                <!-- ADMIN: DOWNLOADS -->
+                <section id="page-admin-downloads" class="page-section hidden-view fade-in">
+                    <div class="flex justify-between items-end mb-6"><div><h2 class="text-2xl font-bold text-gray-800">ดาวน์โหลดสมุดบันทึก</h2><p class="text-gray-500 text-sm">ส่งออกข้อมูลรายชื่อนักเรียนเป็น PDF (พิมพ์)</p></div></div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+                        <div class="flex flex-col md:flex-row gap-4 items-end">
+                            <div class="flex-1"><label class="block text-sm font-medium text-gray-700 mb-1">ประเภท</label><select id="dl-type" onchange="renderDownloadList()" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none bg-white"><option value="club">ชุมนุม</option><option value="elective">วิชาเพิ่มเติม</option></select></div>
+                            <div class="flex-1"><label class="block text-sm font-medium text-gray-700 mb-1">เลือกรายการ</label><select id="dl-item" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none bg-white"></select></div>
+                            <button onclick="previewDownload()" class="bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-gray-900 transition flex items-center gap-2"><i class="fa-solid fa-search"></i> แสดงตัวอย่าง</button>
+                        </div>
+                    </div>
+                    <div id="dl-preview-container" class="hidden bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                        <div class="flex justify-end mb-4"><button onclick="window.print()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition shadow-sm flex items-center gap-2"><i class="fa-solid fa-file-pdf"></i> พิมพ์ / บันทึก PDF</button></div>
+                        <div class="border border-gray-300 p-8 rounded min-h-[500px] relative">
+                            <div class="absolute inset-0 bg-gray-50 opacity-50 flex items-center justify-center -z-10"><span class="text-4xl text-gray-200 transform -rotate-45 font-bold">PREVIEW</span></div>
+                            <div id="dl-preview-content"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ADMIN: SETTINGS -->
+                <section id="page-admin-settings" class="page-section hidden-view fade-in">
+                    <div class="flex justify-between items-end mb-6"><div><h2 class="text-2xl font-bold text-gray-800">ตั้งค่าระบบ</h2><p class="text-gray-500 text-sm">ปรับแต่งสี โลโก้ และชื่อโรงเรียน</p></div></div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-w-2xl">
+                        <form onsubmit="saveSettings(event)" class="space-y-6">
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">ชื่อโรงเรียน</label><input type="text" id="setting-school-name" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none"></div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">สีหลักของเว็บไซต์ (Theme Color)</label>
+                                <div class="flex items-center gap-4"><input type="color" id="setting-color" class="h-12 w-12 rounded cursor-pointer border-0 p-0"><div class="text-sm text-gray-500">เลือกสีที่เข้ากับโรงเรียนของคุณ</div></div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">ลิงก์รูปภาพโลโก้โรงเรียน (URL)</label>
+                                <input type="url" id="setting-logo" placeholder="https://example.com/logo.png" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-primary outline-none">
+                                <p class="text-xs text-gray-500 mt-1">วางลิงก์รูปภาพเพื่อใช้เป็นโลโก้ในระบบและหัวเอกสาร</p>
+                            </div>
+                            <div class="pt-4 border-t"><button type="submit" id="btn-save-settings" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primaryDark transition shadow-sm w-full md:w-auto">บันทึกการตั้งค่า</button></div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- STUDENT: CLUBS -->
+                <section id="page-student-clubs" class="page-section hidden-view fade-in">
+                    <div class="flex justify-between items-end mb-6"><div><h2 class="text-2xl font-bold text-gray-800">ลงทะเบียนชุมนุม</h2><p class="text-gray-500 text-sm" id="student-club-status">กรุณาเลือกชุมนุมที่ต้องการ</p></div></div>
+                    <div id="student-club-permission-denied" class="hidden bg-red-50 text-red-700 p-6 rounded-2xl border border-red-100 text-center mb-6">
+                        <i class="fa-solid fa-lock text-4xl mb-3 opacity-50"></i><h3 class="text-lg font-bold">ท่านยังไม่มีสิทธิ์ลงทะเบียน</h3><p class="text-sm mt-1">ผู้ดูแลระบบยังไม่ได้เปิดระบบลงทะเบียนสำหรับห้องของท่าน</p>
+                    </div>
+                    <div id="student-club-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                </section>
+
+                <!-- STUDENT: ELECTIVES -->
+                <section id="page-student-electives" class="page-section hidden-view fade-in">
+                    <div class="flex justify-between items-end mb-6"><div><h2 class="text-2xl font-bold text-gray-800">ลงทะเบียนวิชาเพิ่มเติม</h2><p class="text-gray-500 text-sm" id="student-elec-status">กรุณาเลือกวิชาที่ต้องการ</p></div></div>
+                    <div id="student-elec-permission-denied" class="hidden bg-red-50 text-red-700 p-6 rounded-2xl border border-red-100 text-center mb-6">
+                        <i class="fa-solid fa-lock text-4xl mb-3 opacity-50"></i><h3 class="text-lg font-bold">ท่านยังไม่มีสิทธิ์ลงทะเบียน</h3><p class="text-sm mt-1">ผู้ดูแลระบบยังไม่ได้เปิดระบบลงทะเบียนสำหรับห้องของท่าน</p>
+                    </div>
+                    <div id="student-elec-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                </section>
+
+                <!-- STUDENT: MY COURSES -->
+                <section id="page-student-my-courses" class="page-section hidden-view fade-in">
+                    <div class="flex justify-between items-end mb-6"><div><h2 class="text-2xl font-bold text-gray-800">ข้อมูลรายวิชาของฉัน</h2><p class="text-gray-500 text-sm">รายการชุมนุมและวิชาเพิ่มเติมที่ลงทะเบียนแล้ว</p></div></div>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-1 h-full bg-primary"></div>
+                            <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2"><i class="fa-solid fa-users text-primary"></i> ชุมนุมที่ลงทะเบียน</h3>
+                            <div id="my-club-content" class="min-h-[100px] flex flex-col justify-center"></div>
+                        </div>
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
+                            <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2" id="my-elec-header"><i class="fa-solid fa-book text-green-500"></i> วิชาเพิ่มเติมที่ลงทะเบียน</h3>
+                            <div id="my-elec-content" class="min-h-[100px] flex flex-col justify-center"></div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ==================== MODALS & ALERTS ==================== -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden-view flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 transform transition-all scale-95 opacity-0" id="modal-box">
+            <div class="text-center">
+                <div id="modal-icon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+                    <i class="fa-solid fa-info text-blue-600 text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900" id="modal-title">แจ้งเตือน</h3>
+                <div class="text-sm text-gray-500 mt-2" id="modal-message">ข้อความ</div>
+            </div>
+            <div class="mt-6 flex justify-center gap-3" id="modal-actions">
+                <button onclick="closeModal()" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition text-sm font-medium">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== PRINT TEMPLATE ==================== -->
+    <div id="print-area" class="hidden bg-white text-black font-sans"></div>
+
+    <!-- ==================== FIREBASE & JAVASCRIPT ==================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCuHk8g1DqllYlgFdgxBuTp5AywLjnNNaQ",
+            authDomain: "devschool-f6d97.firebaseapp.com",
+            projectId: "devschool-f6d97",
+            storageBucket: "devschool-f6d97.firebasestorage.app",
+            messagingSenderId: "339461137916",
+            appId: "1:339461137916:web:35eecf1cb022b2bda9fe79",
+            measurementId: "G-KMYLN1VGJY"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // App State
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'school-reg-system';
+        window.dbPath = (col, docId = null) => {
+            if(docId) return doc(db, 'artifacts', appId, 'public', 'data', col, docId);
+            return collection(db, 'artifacts', appId, 'public', 'data', col);
+        };
+
+        window.LOCAL_DB = {
+            settings: { schoolName: "โรงเรียนตัวอย่าง", color: "#3b82f6", logo: "https://placehold.co/200x200/3b82f6/ffffff?text=LOGO" },
+            users: [], clubs: [], electives: [],
+            permissions: { clubs: {}, electives: {}, allowWithdraw: true, requiredElectives: 3 },
+            counters: { club: 1, elec: { "ไทย": 1, "อังกฤษ": 1, "คณิต": 1, "วิทย์": 1, "ศิลปะ": 1, "การงานอาชีพ": 1, "พละสุขศึกษา": 1 } }
+        };
+
+        window.currentUser = null;
+        window.classesList = ["ม.1", "ม.2", "ม.3", "ม.4", "ม.5", "ม.6"];
+        window.roomsList = ["ม.1/1", "ม.1/2", "ม.2/1", "ม.2/2", "ม.3/1", "ม.3/2", "ม.4/1", "ม.4/2", "ม.5/1", "ม.5/2", "ม.6/1", "ม.6/2"];
+        window.elecPrefixMap = { "ไทย": "ท", "อังกฤษ": "อ", "คณิต": "ค", "วิทย์": "ว", "ศิลปะ": "ศ", "การงานอาชีพ": "ง", "พละสุขศึกษา": "พ" };
+        window.currentStudentFilter = 'all';
+
+        // Connect to Auth on Load
+        window.onload = async () => {
+            try {
+                await signInAnonymously(auth);
+                console.log("Connected to Firebase Auth");
+                // Start listening to critical global data immediately
+                setupDataListeners();
+            } catch (error) {
+                console.error("Auth Error:", error);
+                showModal("ข้อผิดพลาด", "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณารีเฟรชหน้าเว็บ", "error");
+            }
+        };
+
+        function setupDataListeners() {
+            if(!auth.currentUser) return;
+
+            // Settings
+            onSnapshot(dbPath('system', 'settings'), (docSnap) => {
+                if(docSnap.exists()) {
+                    window.LOCAL_DB.settings = docSnap.data();
+                    applySettings();
+                } else {
+                    // Seed initial settings
+                    setDoc(dbPath('system', 'settings'), window.LOCAL_DB.settings);
+                }
+                
+                // UI Enable Login
+                const loginBtn = document.getElementById('btn-login');
+                loginBtn.disabled = false;
+                loginBtn.textContent = "เข้าสู่ระบบ";
+            }, (error) => console.error(error));
+
+            // Permissions
+            onSnapshot(dbPath('system', 'permissions'), (docSnap) => {
+                if(docSnap.exists()) window.LOCAL_DB.permissions = docSnap.data();
+                else setDoc(dbPath('system', 'permissions'), window.LOCAL_DB.permissions);
+                if(window.currentUser) reRenderCurrentPage();
+            }, (error) => console.error(error));
+
+            // Counters
+            onSnapshot(dbPath('system', 'counters'), (docSnap) => {
+                if(docSnap.exists()) window.LOCAL_DB.counters = docSnap.data();
+                else setDoc(dbPath('system', 'counters'), window.LOCAL_DB.counters);
+            }, (error) => console.error(error));
+
+            // Users (Listen to all to allow admin to see and login check)
+            onSnapshot(dbPath('users'), (snapshot) => {
+                const users = [];
+                snapshot.forEach(doc => users.push({ ...doc.data(), natId: doc.id }));
+                window.LOCAL_DB.users = users;
+                
+                // If logged in as Admin, update table
+                if(window.currentUser && window.currentUser.role === 'admin') {
+                    if(document.getElementById('page-admin-students').classList.contains('hidden-view') === false) renderAdminStudents();
+                }
+                // If logged in as student, update current session memory
+                if(window.currentUser) {
+                    const updatedSelf = users.find(u => u.natId === window.currentUser.natId);
+                    if(updatedSelf) {
+                        window.currentUser = updatedSelf;
+                        if(document.getElementById('page-student-my-courses').classList.contains('hidden-view') === false) renderStudentMyCourses();
+                    }
+                }
+            }, (error) => console.error(error));
+
+            // Clubs
+            onSnapshot(dbPath('clubs'), (snapshot) => {
+                const clubs = [];
+                snapshot.forEach(doc => clubs.push(doc.data()));
+                window.LOCAL_DB.clubs = clubs;
+                reRenderCurrentPage();
+            }, (error) => console.error(error));
+
+            // Electives
+            onSnapshot(dbPath('electives'), (snapshot) => {
+                const electives = [];
+                snapshot.forEach(doc => electives.push(doc.data()));
+                window.LOCAL_DB.electives = electives;
+                reRenderCurrentPage();
+            }, (error) => console.error(error));
+        }
+
+        function reRenderCurrentPage() {
+            if(!window.currentUser) return;
+            const openPage = document.querySelector('.page-section:not(.hidden-view)');
+            if(!openPage) return;
+            const pid = openPage.id;
+            
+            if(pid === 'page-admin-clubs') renderAdminClubs();
+            else if(pid === 'page-admin-electives') renderAdminElectives();
+            else if(pid === 'page-student-clubs') renderStudentClubs();
+            else if(pid === 'page-student-electives') renderStudentElectives();
+        }
+
+        window.applySettings = () => {
+            const settings = window.LOCAL_DB.settings;
+            document.documentElement.style.setProperty('--color-primary', settings.color);
+            document.documentElement.style.setProperty('--color-primary-dark', adjustColor(settings.color, -20));
+            document.documentElement.style.setProperty('--school-logo', `url('${settings.logo}')`);
+            
+            document.getElementById('login-school-name').textContent = settings.schoolName;
+            document.getElementById('sidebar-school-name').textContent = settings.schoolName;
+            document.getElementById('mobile-school-name').textContent = settings.schoolName;
+
+            if(document.getElementById('setting-school-name')) {
+                document.getElementById('setting-school-name').value = settings.schoolName;
+                document.getElementById('setting-color').value = settings.color;
+                document.getElementById('setting-logo').value = settings.logo;
+            }
+        };
+
+        function adjustColor(color, amount) {
+            return '#' + color.replace(/^#/, '').replace(/../g, color => ('0'+Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).substr(-2));
+        }
+
+        window.handleLogin = async () => {
+            const natId = document.getElementById('login-id').value.trim();
+            if(!natId) return showModal('เกิดข้อผิดพลาด', 'กรุณากรอกเลขประจำตัวประชาชน', 'error');
+            if(!auth.currentUser) return showModal('ระบบ', 'กรุณารอสักครู่ ระบบกำลังเชื่อมต่อฐานข้อมูล', 'info');
+
+            const btn = document.getElementById('btn-login');
+            btn.disabled = true; btn.textContent = "กำลังตรวจสอบ...";
+
+            try {
+                // Check if user exists
+                let userDocRef = dbPath('users', natId);
+                let userSnap = await getDoc(userDocRef);
+                
+                // Auto create admin if specific ID and no users exist yet
+                if (!userSnap.exists() && natId === '0123456789012') {
+                    const newAdmin = { role: "admin", id: "ADMIN", name: "ผู้ดูแลระบบสูงสุด", classLevel: "-", room: "-" };
+                    await setDoc(userDocRef, newAdmin);
+                    userSnap = await getDoc(userDocRef);
+                }
+
+                if (userSnap.exists()) {
+                    window.currentUser = { ...userSnap.data(), natId: userSnap.id };
+                    document.getElementById('view-login').classList.add('hidden-view');
+                    document.getElementById('view-app').classList.remove('hidden-view');
+                    document.getElementById('current-user-name').textContent = window.currentUser.name;
+                    
+                    if (window.currentUser.role === 'admin') {
+                        document.getElementById('sidebar-role-badge').textContent = "ผู้ดูแลระบบ";
+                        document.getElementById('menu-admin').classList.remove('hidden-view');
+                        document.getElementById('menu-student').classList.add('hidden-view');
+                        navigate('admin-clubs');
+                    } else {
+                        document.getElementById('sidebar-role-badge').textContent = `นร. ชั้น ${window.currentUser.classLevel}/${window.currentUser.room} เลขที่ ${window.currentUser.number}`;
+                        document.getElementById('menu-admin').classList.add('hidden-view');
+                        document.getElementById('menu-student').classList.remove('hidden-view');
+                        navigate('student-clubs');
+                    }
+                } else {
+                    showModal('ไม่พบข้อมูล', 'เลขประจำตัวประชาชนนี้ไม่มีในระบบ กรุณาติดต่อผู้ดูแล', 'error');
+                }
+            } catch (error) {
+                console.error(error);
+                showModal('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ', 'error');
+            } finally {
+                btn.disabled = false; btn.textContent = "เข้าสู่ระบบ";
+            }
+        };
+
+        window.handleLogout = () => {
+            window.currentUser = null;
+            document.getElementById('view-app').classList.add('hidden-view');
+            document.getElementById('view-login').classList.remove('hidden-view');
+            document.getElementById('login-id').value = '';
+        };
+
+        window.showModal = (title, message, type = 'info', customActions = null) => {
+            const overlay = document.getElementById('modal-overlay');
+            const box = document.getElementById('modal-box');
+            const icon = document.getElementById('modal-icon');
+            
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').innerHTML = message;
+
+            if (type === 'success') {
+                icon.innerHTML = '<i class="fa-solid fa-check text-green-600 text-xl"></i>';
+                icon.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4';
+            } else if (type === 'error') {
+                icon.innerHTML = '<i class="fa-solid fa-xmark text-red-600 text-xl"></i>';
+                icon.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4';
+            } else {
+                icon.innerHTML = '<i class="fa-solid fa-info text-blue-600 text-xl"></i>';
+                icon.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4';
+            }
+
+            const actionsContainer = document.getElementById('modal-actions');
+            if (customActions) actionsContainer.innerHTML = customActions;
+            else actionsContainer.innerHTML = `<button onclick="closeModal()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primaryDark transition text-sm font-medium">ตกลง</button>`;
+
+            overlay.classList.remove('hidden-view');
+            setTimeout(() => { box.classList.remove('scale-95', 'opacity-0'); box.classList.add('scale-100', 'opacity-100'); }, 10);
+        };
+
+        window.closeModal = () => {
+            const overlay = document.getElementById('modal-overlay');
+            const box = document.getElementById('modal-box');
+            box.classList.remove('scale-100', 'opacity-100');
+            box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => overlay.classList.add('hidden-view'), 200);
+        };
+
+        window.navigate = (pageId) => {
+            document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden-view'));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-50', 'text-primary', 'font-semibold'); btn.classList.add('text-gray-600');
+            });
+            document.getElementById(`page-${pageId}`).classList.remove('hidden-view');
+            const activeBtn = document.querySelector(`button[onclick="navigate('${pageId}')"]`);
+            if(activeBtn) { activeBtn.classList.add('bg-blue-50', 'text-primary', 'font-semibold'); activeBtn.classList.remove('text-gray-600'); }
+
+            if(pageId === 'admin-clubs') renderAdminClubs();
+            if(pageId === 'admin-electives') renderAdminElectives();
+            if(pageId === 'admin-students') renderAdminStudents();
+            if(pageId === 'admin-permissions') renderAdminPermissions();
+            if(pageId === 'admin-downloads') renderDownloadList();
+            if(pageId === 'student-clubs') renderStudentClubs();
+            if(pageId === 'student-electives') renderStudentElectives();
+            if(pageId === 'student-my-courses') renderStudentMyCourses();
+
+            const sidebar = document.getElementById('sidebar');
+            if(window.innerWidth < 768 && !sidebar.classList.contains('-translate-x-full')) sidebar.classList.add('-translate-x-full');
+        };
+
+        window.renderAdminClubs = () => {
+            document.getElementById('club-id').value = String(window.LOCAL_DB.counters.club).padStart(3, '0');
+            const tbody = document.getElementById('table-admin-clubs');
+            tbody.innerHTML = '';
+            
+            if(window.LOCAL_DB.clubs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-500">ยังไม่มีข้อมูลชุมนุม</td></tr>`;
+                return;
+            }
+
+            // Sort by ID naturally
+            const sortedClubs = [...window.LOCAL_DB.clubs].sort((a,b) => a.id.localeCompare(b.id));
+
+            sortedClubs.forEach((club) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4">${club.id}</td>
+                    <td class="p-4 font-medium text-gray-800">${club.name}<div class="text-xs text-gray-500 font-normal">ผู้ขอ: ${club.reqName} (${club.reqClass})</div></td>
+                    <td class="p-4"><span class="px-2 py-1 rounded-full text-xs font-medium ${club.current >= club.max ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}">${club.current} / ${club.max}</span></td>
+                    <td class="p-4 text-gray-600">${club.teacher}</td>
+                    <td class="p-4 text-center"><button onclick="adminDeleteClub('${club.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition" title="ลบ"><i class="fa-solid fa-trash-alt"></i></button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        window.autoFillStudentInfo = (studentId) => {
+            if(studentId.length < 3) return;
+            const student = window.LOCAL_DB.users.find(u => u.role === 'student' && u.id === studentId);
+            if(student) {
+                document.getElementById('club-req-name').value = student.name;
+                document.getElementById('club-req-class').value = `${student.classLevel}/${student.room}`;
+            }
+        };
+
+        window.adminAddClub = async (e) => {
+            e.preventDefault();
+            if(!auth.currentUser) return;
+            
+            const btn = document.getElementById('btn-save-club');
+            btn.disabled = true; btn.textContent = "กำลังบันทึก...";
+
+            try {
+                const reqId = document.getElementById('club-req-id').value.trim();
+                if (reqId) {
+                    const existingClub = window.LOCAL_DB.clubs.find(c => c.reqId === reqId);
+                    if (existingClub) {
+                        btn.disabled = false; btn.textContent = "บันทึกข้อมูล";
+                        return showModal('ไม่สามารถทำรายการได้', `รหัสนักเรียน <strong>${reqId}</strong> ได้เคยใช้ในการขอเปิดชุมนุม <strong>${existingClub.name}</strong> ไปแล้ว ระบบไม่อนุญาตให้ 1 คนขอเปิดซ้ำ`, 'error');
+                    }
+                }
+
+                const id = document.getElementById('club-id').value;
+                const newClub = {
+                    id: id,
+                    name: document.getElementById('club-name').value,
+                    reqId: reqId,
+                    reqName: document.getElementById('club-req-name').value,
+                    reqClass: document.getElementById('club-req-class').value,
+                    teacher: document.getElementById('club-teacher').value,
+                    max: parseInt(document.getElementById('club-max').value),
+                    current: 0
+                };
+
+                // Save to Firestore
+                await setDoc(dbPath('clubs', id), newClub);
+                
+                // Update Counter
+                await updateDoc(dbPath('system', 'counters'), { club: window.LOCAL_DB.counters.club + 1 });
+                
+                document.getElementById('form-add-club').reset();
+                showModal('สำเร็จ', `เพิ่มชุมนุม ${newClub.name} เรียบร้อยแล้ว`, 'success');
+            } catch(e) {
+                console.error(e);
+                showModal('ข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+            } finally {
+                btn.disabled = false; btn.textContent = "บันทึกข้อมูล";
+            }
+        };
+
+        window.adminDeleteClub = (id) => {
+            const club = window.LOCAL_DB.clubs.find(c => c.id === id);
+            if(!club) return;
+            const actions = `
+                <button onclick="closeModal()" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition text-sm">ยกเลิก</button>
+                <button onclick="confirmDeleteClub('${id}')" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm">ยืนยันลบ</button>
+            `;
+            showModal('ยืนยันการลบ', `คุณต้องการลบชุมนุม <strong>${club.name}</strong> ใช่หรือไม่?<br><span class="text-xs text-red-500">นักเรียนที่ลงทะเบียนวิชานี้ จะถูกรีเซ็ตสิทธิ์</span>`, 'error', actions);
+        };
+
+        window.confirmDeleteClub = async (id) => {
+            if(!auth.currentUser) return;
+            closeModal();
+            try {
+                await deleteDoc(dbPath('clubs', id));
+                // Find all users enrolled and clear them
+                const enrolled = window.LOCAL_DB.users.filter(u => u.clubId === id);
+                for(const user of enrolled) {
+                    await updateDoc(dbPath('users', user.natId), { clubId: null, clubRegTime: null });
+                }
+                showModal('สำเร็จ', 'ลบชุมนุมเรียบร้อยแล้ว', 'success');
+            } catch (e) {
+                console.error(e);
+                showModal('ข้อผิดพลาด', 'ไม่สามารถลบข้อมูลได้', 'error');
+            }
+        };
+
+        window.generateElectiveCode = () => {
+            const cat = document.getElementById('elec-category').value;
+            if(!cat) return;
+            const prefix = window.elecPrefixMap[cat];
+            const num = String(window.LOCAL_DB.counters.elec[cat]).padStart(3, '0');
+            document.getElementById('elec-id').value = `${prefix}36${num}`;
+        };
+
+        window.renderAdminElectives = () => {
+            const tbody = document.getElementById('table-admin-electives');
+            tbody.innerHTML = '';
+            if(window.LOCAL_DB.electives.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">ยังไม่มีข้อมูลวิชาเพิ่มเติม</td></tr>`;
+                return;
+            }
+
+            // Sort by category then ID
+            const sorted = [...window.LOCAL_DB.electives].sort((a,b) => {
+                if(a.category !== b.category) return a.category.localeCompare(b.category);
+                return a.id.localeCompare(b.id);
+            });
+
+            sorted.forEach(elec => {
+                const targetClassesText = elec.targetClasses && elec.targetClasses.length > 0 ? elec.targetClasses.join(', ') : 'ทั้งหมด';
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4 font-medium text-primary">${elec.id}</td>
+                    <td class="p-4 font-medium text-gray-800">${elec.name}<div class="text-xs text-blue-500 font-normal mt-0.5">ชั้นที่เปิด: ${targetClassesText}</div></td>
+                    <td class="p-4 text-gray-500 text-sm"><span class="bg-gray-100 px-2 py-1 rounded">${elec.category}</span></td>
+                    <td class="p-4"><span class="px-2 py-1 rounded-full text-xs font-medium ${elec.current >= elec.max ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">${elec.current} / ${elec.max}</span></td>
+                    <td class="p-4 text-gray-600">${elec.teacher}</td>
+                    <td class="p-4 text-center"><button onclick="adminDeleteElective('${elec.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition" title="ลบ"><i class="fa-solid fa-trash-alt"></i></button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        window.adminAddElective = async (e) => {
+            e.preventDefault();
+            if(!auth.currentUser) return;
+            const btn = document.getElementById('btn-save-elec');
+            btn.disabled = true; btn.textContent = "กำลังบันทึก...";
+
+            try {
+                const cat = document.getElementById('elec-category').value;
+                const id = document.getElementById('elec-id').value;
+                const targetClasses = Array.from(document.querySelectorAll('#elec-target-classes input:checked')).map(cb => cb.value);
+                
+                if(targetClasses.length === 0) {
+                    btn.disabled = false; btn.textContent = "ยืนยัน";
+                    return showModal('ข้อมูลไม่ครบถ้วน', 'กรุณาเลือกระดับชั้นที่เปิดสอนอย่างน้อย 1 ระดับชั้น', 'error');
+                }
+
+                const newElec = {
+                    id: id, category: cat, name: document.getElementById('elec-name').value,
+                    teacher: document.getElementById('elec-teacher').value,
+                    max: parseInt(document.getElementById('elec-max').value),
+                    current: 0, targetClasses: targetClasses
+                };
+
+                await setDoc(dbPath('electives', id), newElec);
+                
+                // Update specific category counter
+                const updatedCounters = { ...window.LOCAL_DB.counters };
+                updatedCounters.elec[cat]++;
+                await updateDoc(dbPath('system', 'counters'), { elec: updatedCounters.elec });
+                
+                document.getElementById('form-add-elective').reset();
+                document.getElementById('elec-id').value = '';
+                showModal('สำเร็จ', `เพิ่มวิชา ${newElec.name} เรียบร้อยแล้ว`, 'success');
+            } catch (e) {
+                console.error(e); showModal('ข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+            } finally {
+                btn.disabled = false; btn.textContent = "ยืนยัน";
+            }
+        };
+
+        window.adminDeleteElective = (id) => {
+            const elec = window.LOCAL_DB.electives.find(e => e.id === id);
+            if(!elec) return;
+            const actions = `
+                <button onclick="closeModal()" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition text-sm">ยกเลิก</button>
+                <button onclick="confirmDeleteElective('${id}')" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm">ยืนยันลบ</button>
+            `;
+            showModal('ยืนยันการลบ', `คุณต้องการลบวิชา <strong>${elec.name}</strong> ใช่หรือไม่?`, 'error', actions);
+        };
+
+        window.confirmDeleteElective = async (id) => {
+            if(!auth.currentUser) return;
+            closeModal();
+            try {
+                await deleteDoc(dbPath('electives', id));
+                const enrolled = window.LOCAL_DB.users.filter(u => u.enrolledElectives && u.enrolledElectives.some(e => e.id === id));
+                for(const user of enrolled) {
+                    const newEnrolled = user.enrolledElectives.filter(e => e.id !== id);
+                    await updateDoc(dbPath('users', user.natId), { enrolledElectives: newEnrolled });
+                }
+                showModal('สำเร็จ', 'ลบวิชาเพิ่มเติมเรียบร้อยแล้ว', 'success');
+            } catch (e) {
+                console.error(e); showModal('ข้อผิดพลาด', 'ไม่สามารถลบข้อมูลได้', 'error');
+            }
+        };
+
+        window.renderAdminStudents = () => {
+            const filterContainer = document.getElementById('student-class-filters');
+            filterContainer.innerHTML = `<button onclick="filterStudents('all')" class="px-4 py-1.5 rounded-full text-sm font-medium transition whitespace-nowrap ${window.currentStudentFilter === 'all' ? 'bg-primary text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}">ทั้งหมด</button>`;
+            window.classesList.forEach(cls => {
+                filterContainer.innerHTML += `<button onclick="filterStudents('${cls}')" class="px-4 py-1.5 rounded-full text-sm font-medium transition whitespace-nowrap ${window.currentStudentFilter === cls ? 'bg-primary text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}">${cls}</button>`;
+            });
+
+            const tbody = document.getElementById('table-admin-students');
+            tbody.innerHTML = '';
+            
+            let students = window.LOCAL_DB.users.filter(u => u.role === 'student');
+            if(window.currentStudentFilter !== 'all') {
+                students = students.filter(u => u.classLevel === window.currentStudentFilter);
+            }
+            
+            students.sort((a,b) => {
+                if(a.classLevel !== b.classLevel) return a.classLevel.localeCompare(b.classLevel);
+                if(a.room !== b.room) return parseInt(a.room) - parseInt(b.room);
+                return a.number - b.number;
+            });
+
+            if(students.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-500">ไม่มีข้อมูลนักเรียน</td></tr>`;
+                return;
+            }
+
+            students.forEach(stu => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4 text-gray-600">${stu.id}</td>
+                    <td class="p-4 font-medium text-gray-800">${stu.name}</td>
+                    <td class="p-4 text-gray-600">${stu.classLevel}/${stu.room}</td>
+                    <td class="p-4 text-gray-600">${stu.number}</td>
+                    <td class="p-4 text-center"><button onclick="adminDeleteStudent('${stu.natId}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition" title="ลบข้อมูล"><i class="fa-solid fa-user-minus"></i></button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        window.filterStudents = (cls) => { window.currentStudentFilter = cls; renderAdminStudents(); };
+
+        window.adminAddStudent = async (e) => {
+            e.preventDefault();
+            if(!auth.currentUser) return;
+            const natId = document.getElementById('stu-national-id').value;
+            
+            if(window.LOCAL_DB.users.find(u => u.natId === natId)) {
+                return showModal('ผิดพลาด', 'เลขประจำตัวประชาชนนี้มีในระบบแล้ว', 'error');
+            }
+
+            const btn = document.getElementById('btn-save-student');
+            btn.disabled = true; btn.textContent = "กำลังบันทึก...";
+
+            const newStudent = {
+                role: 'student', id: document.getElementById('stu-id').value,
+                name: document.getElementById('stu-name').value,
+                classLevel: document.getElementById('stu-class').value,
+                room: document.getElementById('stu-room').value,
+                number: parseInt(document.getElementById('stu-no').value),
+                clubId: null, enrolledElectives: []
+            };
+
+            try {
+                await setDoc(dbPath('users', natId), newStudent);
+                document.getElementById('form-add-student').reset();
+                showModal('สำเร็จ', `เพิ่มข้อมูลนักเรียน ${newStudent.name} เรียบร้อยแล้ว`, 'success');
+                filterStudents(newStudent.classLevel);
+            } catch(e) {
+                console.error(e); showModal('ข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+            } finally {
+                btn.disabled = false; btn.textContent = "เพิ่มข้อมูล";
+            }
+        };
+
+        window.adminDeleteStudent = (natId) => {
+            const stu = window.LOCAL_DB.users.find(u => u.natId === natId);
+            if(!stu) return;
+            const actions = `
+                <button onclick="closeModal()" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition text-sm">ยกเลิก</button>
+                <button onclick="confirmDeleteStudent('${natId}')" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm">ยืนยันลบ</button>
+            `;
+            showModal('ยืนยันการลบ', `คุณต้องการลบข้อมูล <strong>${stu.name}</strong> ใช่หรือไม่?`, 'error', actions);
+        };
+
+        window.confirmDeleteStudent = async (natId) => {
+            if(!auth.currentUser) return;
+            closeModal();
+            try {
+                // Should technically decrement counts in clubs/electives if they are enrolled, 
+                // but for simplicity in this version we just delete the user doc.
+                await deleteDoc(dbPath('users', natId));
+                showModal('สำเร็จ', 'ลบข้อมูลนักเรียนเรียบร้อยแล้ว', 'success');
+            } catch (e) {
+                console.error(e); showModal('ข้อผิดพลาด', 'ไม่สามารถลบข้อมูลได้', 'error');
+            }
+        };
+
+        window.renderAdminPermissions = () => {
+            document.getElementById('perm-allow-withdraw').checked = window.LOCAL_DB.permissions.allowWithdraw;
+            document.getElementById('perm-req-elec').value = window.LOCAL_DB.permissions.requiredElectives || 3;
+            const clubList = document.getElementById('perm-clubs-list');
+            const elecList = document.getElementById('perm-electives-list');
+            clubList.innerHTML = '<div class="grid grid-cols-2 gap-2">'; elecList.innerHTML = '<div class="grid grid-cols-2 gap-2">';
+
+            // ดึงข้อมูลห้องทั้งหมดจากฐานข้อมูลนักเรียนมารวมกับห้องพื้นฐานอัตโนมัติ
+            const baseRooms = ["ม.1/1", "ม.1/2", "ม.2/1", "ม.2/2", "ม.3/1", "ม.3/2", "ม.4/1", "ม.4/2", "ม.5/1", "ม.5/2", "ม.6/1", "ม.6/2"];
+            const dbRooms = new Set(baseRooms);
+            window.LOCAL_DB.users.forEach(u => {
+                if (u.role === 'student' && u.classLevel && u.room) {
+                    dbRooms.add(`${u.classLevel}/${u.room}`);
+                }
+            });
+            
+            // จัดเรียงรายชื่อห้อง (ม.1/1 -> ม.6/10)
+            window.roomsList = Array.from(dbRooms).sort((a, b) => {
+                const matchA = a.match(/ม\.(\d+)\/(\d+)/);
+                const matchB = b.match(/ม\.(\d+)\/(\d+)/);
+                if (matchA && matchB) {
+                    if (matchA[1] !== matchB[1]) return parseInt(matchA[1]) - parseInt(matchB[1]);
+                    return parseInt(matchA[2]) - parseInt(matchB[2]);
+                }
+                return a.localeCompare(b);
+            });
+
+            window.roomsList.forEach(room => {
+                const safeRoomId = room.replace('/','-');
+                const isClubChecked = window.LOCAL_DB.permissions.clubs && window.LOCAL_DB.permissions.clubs[room] ? 'checked' : '';
+                clubList.innerHTML += `
+                    <label class="flex items-center gap-2 p-2 rounded border border-gray-100 hover:bg-gray-50 cursor-pointer transition text-sm">
+                        <input type="checkbox" id="perm-c-${safeRoomId}" class="w-4 h-4 text-primary rounded focus:ring-primary" ${isClubChecked}>
+                        <span class="text-gray-700 font-medium">ห้อง ${room}</span>
+                    </label>
+                `;
+                const isElecChecked = window.LOCAL_DB.permissions.electives && window.LOCAL_DB.permissions.electives[room] ? 'checked' : '';
+                elecList.innerHTML += `
+                    <label class="flex items-center gap-2 p-2 rounded border border-gray-100 hover:bg-gray-50 cursor-pointer transition text-sm">
+                        <input type="checkbox" id="perm-e-${safeRoomId}" class="w-4 h-4 text-green-500 rounded focus:ring-green-500" ${isElecChecked}>
+                        <span class="text-gray-700 font-medium">ห้อง ${room}</span>
+                    </label>
+                `;
+            });
+            clubList.innerHTML += '</div>'; elecList.innerHTML += '</div>';
+        };
+
+        window.savePermissions = async () => {
+            if(!auth.currentUser) return;
+            const btn = document.getElementById('btn-save-permissions');
+            btn.disabled = true; btn.textContent = "กำลังบันทึก...";
+
+            try {
+                const reqElec = parseInt(document.getElementById('perm-req-elec').value) || 3;
+                const newPerms = { clubs: {}, electives: {}, allowWithdraw: document.getElementById('perm-allow-withdraw').checked, requiredElectives: reqElec };
+                window.roomsList.forEach(room => {
+                    const safeRoomId = room.replace('/', '-');
+                    const cElem = document.getElementById(`perm-c-${safeRoomId}`);
+                    const eElem = document.getElementById(`perm-e-${safeRoomId}`);
+                    if(cElem) newPerms.clubs[room] = cElem.checked;
+                    if(eElem) newPerms.electives[room] = eElem.checked;
+                });
+                await updateDoc(dbPath('system', 'permissions'), newPerms);
+                showModal('บันทึกสำเร็จ', 'อัปเดตสิทธิ์การลงทะเบียนและตั้งค่าระบบเรียบร้อยแล้ว', 'success');
+            } catch (e) {
+                console.error(e); showModal('ข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+            } finally {
+                btn.disabled = false; btn.textContent = "บันทึกสิทธิ์การลงทะเบียนทั้งหมด";
+            }
+        };
+
+        window.saveSettings = async (e) => {
+            e.preventDefault();
+            if(!auth.currentUser) return;
+            const btn = document.getElementById('btn-save-settings');
+            btn.disabled = true; btn.textContent = "กำลังบันทึก...";
+
+            try {
+                const newSettings = {
+                    schoolName: document.getElementById('setting-school-name').value,
+                    color: document.getElementById('setting-color').value,
+                    logo: document.getElementById('setting-logo').value || window.LOCAL_DB.settings.logo
+                };
+                await updateDoc(dbPath('system', 'settings'), newSettings);
+                showModal('บันทึกสำเร็จ', 'อัปเดตการตั้งค่าระบบเรียบร้อยแล้ว', 'success');
+            } catch(e) {
+                console.error(e); showModal('ข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+            } finally {
+                btn.disabled = false; btn.textContent = "บันทึกการตั้งค่า";
+            }
+        };
+
+        window.renderDownloadList = () => {
+            const type = document.getElementById('dl-type').value;
+            const select = document.getElementById('dl-item');
+            select.innerHTML = '<option value="" disabled selected>-- เลือกรายการ --</option>';
+            const list = type === 'club' ? window.LOCAL_DB.clubs : window.LOCAL_DB.electives;
+            
+            const sortedList = [...list].sort((a,b) => a.id.localeCompare(b.id));
+            sortedList.forEach(item => { select.innerHTML += `<option value="${item.id}">${item.id} - ${item.name}</option>`; });
+            document.getElementById('dl-preview-container').classList.add('hidden');
+        };
+
+        window.previewDownload = () => {
+            const type = document.getElementById('dl-type').value;
+            const id = document.getElementById('dl-item').value;
+            if(!id) return showModal('แจ้งเตือน', 'กรุณาเลือกรายการที่ต้องการพิมพ์', 'error');
+
+            const data = type === 'club' ? window.LOCAL_DB.clubs.find(c=>c.id===id) : window.LOCAL_DB.electives.find(e=>e.id===id);
+            if(!data) return;
+
+            const enrolled = window.LOCAL_DB.users.filter(u => {
+                if (type === 'club') return u.clubId === id;
+                if (type === 'elective') {
+                    return u.enrolledElectives && u.enrolledElectives.some(e => e.id === id);
+                }
+                return false;
+            });
+            enrolled.sort((a,b) => {
+                if(a.classLevel !== b.classLevel) return a.classLevel.localeCompare(b.classLevel);
+                if(a.room !== b.room) return parseInt(a.room) - parseInt(b.room);
+                return a.number - b.number;
+            });
+
+            let extraInfo = type === 'club' ? `<p><strong>ผู้ขอเปิดชุมนุม:</strong> ${data.reqName} ชั้น ${data.reqClass}</p>` : `<p><strong>สังกัด:</strong> ${data.category}</p>`;
+            let tbodyHtml = enrolled.length > 0 ? '' : '<tr><td colspan="4" style="text-align:center; padding:20px;">ไม่มีนักเรียนลงทะเบียน</td></tr>';
+            enrolled.forEach((s, idx) => {
+                tbodyHtml += `
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px; text-align:center;">${idx+1}</td>
+                        <td style="border:1px solid #000; padding:8px; text-align:center;">${s.id}</td>
+                        <td style="border:1px solid #000; padding:8px;">${s.name}</td>
+                        <td style="border:1px solid #000; padding:8px; text-align:center;">${s.classLevel}/${s.room} เลขที่ ${s.number}</td>
+                    </tr>
+                `;
+            });
+
+            const printHtml = `
+                <div style="font-family:'Prompt', sans-serif; color:#000; max-width:800px; margin:0 auto; background:#fff; padding:20px;">
+                    <div style="text-align:center; margin-bottom:20px;">
+                        <img src="${window.LOCAL_DB.settings.logo}" style="display:block; width:100px; height:100px; object-fit:contain; border-radius:50%; margin:0 auto 10px auto;">
+                        <h2 style="margin:0; font-size:24px;">${window.LOCAL_DB.settings.schoolName}</h2>
+                        <h3 style="margin:5px 0 15px; font-weight:normal;">รายชื่อนักเรียน ${type==='club'?'ชุมนุม':'วิชาเพิ่มเติม'}</h3>
+                    </div>
+                    <div style="margin-bottom:20px; line-height:1.6; font-size:16px;">
+                        <p style="margin:0;"><strong>รหัส:</strong> ${data.id} &nbsp;&nbsp; <strong>ชื่อวิชา:</strong> ${data.name}</p>
+                        <p style="margin:0;"><strong>ครูผู้ดูแล:</strong> ${data.teacher}</p>
+                        ${extraInfo}
+                    </div>
+                    <table style="width:100%; border-collapse:collapse; margin-top:20px;">
+                        <thead>
+                            <tr style="background-color:#f3f4f6;">
+                                <th style="border:1px solid #000; padding:10px; width:50px;">ลำดับ</th>
+                                <th style="border:1px solid #000; padding:10px; width:120px;">รหัสนักเรียน</th>
+                                <th style="border:1px solid #000; padding:10px;">ชื่อ - นามสกุล</th>
+                                <th style="border:1px solid #000; padding:10px; width:150px;">ชั้น/ห้อง (เลขที่)</th>
+                            </tr>
+                        </thead>
+                        <tbody>${tbodyHtml}</tbody>
+                    </table>
+                    <div style="margin-top:50px; text-align:right;"><p>ลงชื่อ......................................................ครูผู้ดูแล</p><p>(${data.teacher})</p></div>
+                </div>
+            `;
+            document.getElementById('dl-preview-content').innerHTML = printHtml;
+            document.getElementById('print-area').innerHTML = printHtml;
+            document.getElementById('dl-preview-container').classList.remove('hidden');
+        };
+
+        window.renderStudentClubs = () => {
+            const userRoomStr = `${window.currentUser.classLevel}/${window.currentUser.room}`;
+            const hasPerm = window.LOCAL_DB.permissions.clubs[userRoomStr];
+            const listDiv = document.getElementById('student-club-list');
+            const deniedDiv = document.getElementById('student-club-permission-denied');
+            
+            if(!hasPerm) {
+                deniedDiv.classList.remove('hidden'); listDiv.classList.add('hidden');
+                deniedDiv.querySelector('p').textContent = `ผู้ดูแลระบบยังไม่ได้เปิดระบบลงทะเบียนสำหรับห้อง ${userRoomStr} ของท่าน`; return;
+            }
+            
+            deniedDiv.classList.add('hidden'); listDiv.classList.remove('hidden'); listDiv.innerHTML = '';
+            
+            const sorted = [...window.LOCAL_DB.clubs].sort((a,b) => a.id.localeCompare(b.id));
+
+            sorted.forEach(club => {
+                const isFull = club.current >= club.max;
+                const isRegisteredHere = window.currentUser.clubId === club.id;
+                const hasOtherClub = window.currentUser.clubId !== null && window.currentUser.clubId !== undefined && !isRegisteredHere;
+                
+                let btnHtml = '';
+                if(isRegisteredHere) btnHtml = `<button disabled class="w-full mt-4 py-2 bg-green-100 text-green-700 font-bold rounded-lg border border-green-200"><i class="fa-solid fa-check-circle"></i> ลงทะเบียนแล้ว</button>`;
+                else if(hasOtherClub) btnHtml = `<button disabled class="w-full mt-4 py-2 bg-gray-100 text-gray-400 font-medium rounded-lg">ลงวิชาอื่นแล้ว</button>`;
+                else if(isFull) btnHtml = `<button disabled class="w-full mt-4 py-2 bg-red-50 text-red-400 font-medium rounded-lg">เต็มแล้ว</button>`;
+                else btnHtml = `<button onclick="confirmRegister('club', '${club.id}')" class="w-full mt-4 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primaryDark transition shadow-sm">ลงทะเบียน</button>`;
+
+                listDiv.innerHTML += `
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition">
+                        <div class="flex justify-between items-start mb-2"><span class="text-xs font-bold text-gray-400">รหัส: ${club.id}</span><span class="px-2 py-1 rounded-full text-xs font-bold ${isFull ? 'bg-red-100 text-red-600' : 'bg-blue-50 text-primary'}">${club.current}/${club.max}</span></div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-1">${club.name}</h3>
+                        <p class="text-sm text-gray-500 mb-4 flex-1"><i class="fa-solid fa-user-tie text-gray-400 w-4"></i> ${club.teacher}</p>
+                        ${btnHtml}
+                    </div>
+                `;
+            });
+        };
+
+        window.renderStudentElectives = () => {
+            const userRoomStr = `${window.currentUser.classLevel}/${window.currentUser.room}`;
+            const hasPerm = window.LOCAL_DB.permissions.electives[userRoomStr];
+            const listDiv = document.getElementById('student-elec-list');
+            const deniedDiv = document.getElementById('student-elec-permission-denied');
+            
+            if(!hasPerm) {
+                deniedDiv.classList.remove('hidden'); listDiv.classList.add('hidden');
+                deniedDiv.querySelector('p').textContent = `ผู้ดูแลระบบยังไม่ได้เปิดระบบลงทะเบียนสำหรับห้อง ${userRoomStr} ของท่าน`; return;
+            }
+            
+            deniedDiv.classList.add('hidden'); listDiv.classList.remove('hidden'); listDiv.innerHTML = '';
+
+            const visibleElectives = window.LOCAL_DB.electives.filter(elec => !elec.targetClasses || elec.targetClasses.includes(window.currentUser.classLevel));
+            visibleElectives.sort((a,b) => a.id.localeCompare(b.id));
+
+            if(visibleElectives.length === 0) {
+                listDiv.innerHTML = `<div class="col-span-full text-center p-8 bg-gray-50 rounded-2xl text-gray-500 border border-gray-100">ไม่มีวิชาเพิ่มเติมที่เปิดรับสำหรับระดับชั้นของท่านในขณะนี้</div>`; return;
+            }
+
+            visibleElectives.forEach(elec => {
+                const isFull = elec.current >= elec.max;
+                const enrolledElectives = window.currentUser.enrolledElectives || [];
+                const maxElec = window.LOCAL_DB.permissions.requiredElectives || 3;
+                
+                const isRegisteredHere = enrolledElectives.some(e => e.id === elec.id);
+                const hasReachedLimit = enrolledElectives.length >= maxElec && !isRegisteredHere;
+                
+                let btnHtml = '';
+                if(isRegisteredHere) btnHtml = `<button disabled class="w-full mt-4 py-2 bg-green-100 text-green-700 font-bold rounded-lg border border-green-200"><i class="fa-solid fa-check-circle"></i> ลงทะเบียนแล้ว</button>`;
+                else if(hasReachedLimit) btnHtml = `<button disabled class="w-full mt-4 py-2 bg-gray-100 text-gray-400 font-medium rounded-lg">ลงครบ ${maxElec} วิชาแล้ว</button>`;
+                else if(isFull) btnHtml = `<button disabled class="w-full mt-4 py-2 bg-red-50 text-red-400 font-medium rounded-lg">เต็มแล้ว</button>`;
+                else btnHtml = `<button onclick="confirmRegister('elective', '${elec.id}')" class="w-full mt-4 py-2 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition shadow-sm">ลงทะเบียน</button>`;
+
+                listDiv.innerHTML += `
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition">
+                        <div class="flex justify-between items-start mb-2"><span class="text-xs font-bold text-gray-400">${elec.id}</span><span class="px-2 py-1 rounded-full text-xs font-bold ${isFull ? 'bg-red-100 text-red-600' : 'bg-green-50 text-green-600'}">${elec.current}/${elec.max}</span></div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-1">${elec.name}</h3>
+                        <div class="flex gap-2 text-xs mb-4"><span class="bg-gray-100 text-gray-600 px-2 py-1 rounded">${elec.category}</span></div>
+                        <p class="text-sm text-gray-500 flex-1"><i class="fa-solid fa-user-tie text-gray-400 w-4"></i> ${elec.teacher}</p>
+                        ${btnHtml}
+                    </div>
+                `;
+            });
+        };
+
+        window.confirmRegister = (type, id) => {
+            const data = type === 'club' ? window.LOCAL_DB.clubs.find(c=>c.id===id) : window.LOCAL_DB.electives.find(e=>e.id===id);
+            const detailHtml = `<p class="text-gray-700 mb-4">คุณต้องการยืนยันการลงทะเบียน <strong>${data.name}</strong> ใช่หรือไม่?</p><p class="text-red-500 text-xs text-center"><i class="fa-solid fa-triangle-exclamation"></i> กรุณาตรวจสอบให้แน่ใจ หากกดยืนยันแล้วจะเป็นการบันทึกสิทธิ์ทันที</p>`;
+            const actions = `
+                <button onclick="closeModal()" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition text-sm">ยกเลิก</button>
+                <button onclick="processRegister('${type}', '${id}')" class="px-6 py-2 ${type === 'club' ? 'bg-primary hover:bg-primaryDark' : 'bg-green-500 hover:bg-green-600'} text-white font-medium rounded-lg transition text-sm shadow-sm flex items-center gap-2" id="btn-confirm-reg">
+                    <i class="fa-solid fa-check"></i> ยืนยันการลงทะเบียน
+                </button>
+            `;
+            showModal(`ยืนยันการลงทะเบียน`, detailHtml, 'info', actions);
+        };
+
+        window.processRegister = async (type, id) => {
+            if(!auth.currentUser) return;
+            const btn = document.getElementById('btn-confirm-reg');
+            if(btn) { btn.disabled = true; btn.textContent = "กำลังประมวลผล..."; }
+            
+            try {
+                // Must fetch fresh data to prevent race conditions on max slots
+                const collectionName = type === 'club' ? 'clubs' : 'electives';
+                const docRef = dbPath(collectionName, id);
+                const docSnap = await getDoc(docRef);
+                if(!docSnap.exists()) throw new Error("ไม่พบข้อมูลรายวิชา");
+                
+                const currentData = docSnap.data();
+                if(currentData.current >= currentData.max) {
+                    closeModal();
+                    return showModal('ผิดพลาด', 'รายวิชานี้เต็มแล้วขณะที่คุณกำลังทำรายการ กรุณาเลือกวิชาอื่น', 'error');
+                }
+
+                const now = new Date();
+                const timeStr = `${now.toLocaleDateString('th-TH')} เวลา ${now.toLocaleTimeString('th-TH')} น.`;
+
+                // Update Course count
+                await updateDoc(docRef, { current: currentData.current + 1 });
+                
+                // Update User Profile
+                const userUpdate = {};
+                if(type === 'club') { userUpdate.clubId = id; userUpdate.clubRegTime = timeStr; } 
+                else { 
+                    const enrolled = window.currentUser.enrolledElectives || [];
+                    userUpdate.enrolledElectives = [...enrolled, { id: id, regTime: timeStr }];
+                }
+                await updateDoc(dbPath('users', window.currentUser.natId), userUpdate);
+
+                // Show Receipt
+                const typeStr = type === 'club' ? 'ชุมนุม' : 'วิชาเพิ่มเติม';
+                const receiptHtml = `
+                    <div class="text-left bg-gray-50 p-4 rounded-xl mt-4 mb-2 border border-gray-200 text-sm shadow-inner relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full ${type === 'club' ? 'bg-primary' : 'bg-green-500'}"></div>
+                        <div class="space-y-2">
+                            <p class="flex justify-between border-b pb-1"><span class="text-gray-500">รหัสนักเรียน:</span> <strong>${window.currentUser.id}</strong></p>
+                            <p class="flex justify-between border-b pb-1"><span class="text-gray-500">ชื่อ-นามสกุล:</span> <strong>${window.currentUser.name}</strong></p>
+                            <p class="flex justify-between border-b pb-1"><span class="text-gray-500">ชั้นเรียน:</span> <strong>${window.currentUser.classLevel}/${window.currentUser.room} (เลขที่ ${window.currentUser.number})</strong></p>
+                            <p class="flex justify-between border-b pb-1 pt-2"><span class="text-gray-500">รหัส${typeStr}:</span> <strong class="${type === 'club' ? 'text-primary' : 'text-green-600'}">${currentData.id}</strong></p>
+                            <p class="flex justify-between border-b pb-1"><span class="text-gray-500">ชื่อ${typeStr}:</span> <strong class="${type === 'club' ? 'text-primary' : 'text-green-600'}">${currentData.name}</strong></p>
+                            <p class="flex justify-between pt-1"><span class="text-gray-500">เวลาที่บันทึก:</span> <span class="text-gray-800 text-xs mt-0.5">${timeStr}</span></p>
+                        </div>
+                    </div>
+                    <p class="text-green-600 font-bold text-center mt-3">ลงทะเบียนสำเร็จ!</p>
+                `;
+                showModal('หลักฐานการลงทะเบียน', receiptHtml, 'success');
+            } catch (e) {
+                console.error(e);
+                closeModal(); showModal('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการลงทะเบียน', 'error');
+            }
+        };
+
+        window.renderStudentMyCourses = () => {
+            const clubContainer = document.getElementById('my-club-content');
+            const elecContainer = document.getElementById('my-elec-content');
+            const canWithdraw = window.LOCAL_DB.permissions.allowWithdraw;
+
+            // Club View
+            if(window.currentUser.clubId) {
+                const club = window.LOCAL_DB.clubs.find(c => c.id === window.currentUser.clubId);
+                if(club) {
+                    const timeStr = window.currentUser.clubRegTime || 'ไม่มีข้อมูลเวลา';
+                    const withdrawBtnHtml = canWithdraw 
+                        ? `<button onclick="confirmWithdraw('club', '${club.id}')" class="mt-auto w-full py-2 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 transition border border-red-100 flex justify-center items-center gap-2"><i class="fa-solid fa-times-circle"></i> ถอนรายวิชานี้</button>`
+                        : `<div class="mt-auto w-full py-2 bg-gray-100 text-gray-400 font-medium rounded-lg border border-gray-200 flex justify-center items-center gap-2 text-sm cursor-not-allowed"><i class="fa-solid fa-lock"></i> ปิดระบบการถอนรายวิชา</div>`;
+
+                    clubContainer.innerHTML = `
+                        <div class="text-left bg-gray-50 p-4 rounded-xl mb-4 border border-gray-200 text-sm shadow-inner relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-1 h-full bg-primary"></div>
+                            <div class="space-y-2">
+                                <p class="flex justify-between border-b pb-1"><span class="text-gray-500">รหัสนักเรียน:</span> <strong>${window.currentUser.id}</strong></p>
+                                <p class="flex justify-between border-b pb-1"><span class="text-gray-500">ชื่อ-นามสกุล:</span> <strong>${window.currentUser.name}</strong></p>
+                                <p class="flex justify-between border-b pb-1 pt-2"><span class="text-gray-500">รหัสชุมนุม:</span> <strong class="text-primary">${club.id}</strong></p>
+                                <p class="flex justify-between border-b pb-1"><span class="text-gray-500">ชื่อชุมนุม:</span> <strong class="text-primary">${club.name}</strong></p>
+                                <p class="flex justify-between pt-1"><span class="text-gray-500">เวลาที่บันทึก:</span> <span class="text-gray-800 text-xs mt-0.5">${timeStr}</span></p>
+                            </div>
+                        </div> ${withdrawBtnHtml}`;
+                }
+            } else {
+                clubContainer.innerHTML = `<div class="text-center text-gray-400 py-4"><i class="fa-solid fa-folder-open text-3xl mb-2 opacity-50"></i><p class="text-sm">ยังไม่ได้ลงทะเบียนชุมนุม</p></div>`;
+            }
+
+            // Elective View
+            const enrolledElectives = window.currentUser.enrolledElectives || [];
+            const maxElec = window.LOCAL_DB.permissions.requiredElectives || 3;
+            
+            document.getElementById('my-elec-header').innerHTML = `<i class="fa-solid fa-book text-green-500"></i> วิชาเพิ่มเติมที่ลงทะเบียน (${enrolledElectives.length}/${maxElec} วิชา)`;
+
+            if(enrolledElectives.length > 0) {
+                elecContainer.innerHTML = '';
+                enrolledElectives.forEach(enrolled => {
+                    const elec = window.LOCAL_DB.electives.find(e => e.id === enrolled.id);
+                    if(elec) {
+                        const timeStr = enrolled.regTime || 'ไม่มีข้อมูลเวลา';
+                        const withdrawBtnHtml = canWithdraw 
+                            ? `<button onclick="confirmWithdraw('elective', '${elec.id}')" class="mt-2 w-full py-2 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 transition border border-red-100 flex justify-center items-center gap-2 text-xs"><i class="fa-solid fa-times-circle"></i> ถอนวิชานี้</button>`
+                            : ``;
+
+                        elecContainer.innerHTML += `
+                            <div class="text-left bg-gray-50 p-4 rounded-xl mb-4 border border-gray-200 text-sm shadow-inner relative overflow-hidden">
+                                <div class="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
+                                <div class="space-y-2">
+                                    <p class="flex justify-between border-b pb-1 pt-1"><span class="text-gray-500">รหัสวิชาเพิ่มเติม:</span> <strong class="text-green-600">${elec.id}</strong></p>
+                                    <p class="flex justify-between border-b pb-1"><span class="text-gray-500">ชื่อวิชาเพิ่มเติม:</span> <strong class="text-green-600">${elec.name}</strong></p>
+                                    <p class="flex justify-between pt-1"><span class="text-gray-500">เวลาที่บันทึก:</span> <span class="text-gray-800 text-xs mt-0.5">${timeStr}</span></p>
+                                </div>
+                                ${withdrawBtnHtml}
+                            </div>`;
+                    }
+                });
+                
+                if(!canWithdraw) {
+                    elecContainer.innerHTML += `<div class="mt-2 w-full py-2 bg-gray-100 text-gray-400 font-medium rounded-lg border border-gray-200 flex justify-center items-center gap-2 text-sm cursor-not-allowed"><i class="fa-solid fa-lock"></i> ปิดระบบการถอนรายวิชา</div>`;
+                }
+            } else {
+                elecContainer.innerHTML = `<div class="text-center text-gray-400 py-4"><i class="fa-solid fa-folder-open text-3xl mb-2 opacity-50"></i><p class="text-sm">ยังไม่ได้ลงทะเบียนวิชาเพิ่มเติม</p></div>`;
+            }
+        };
+
+        window.confirmWithdraw = (type, id) => {
+            const data = type === 'club' ? window.LOCAL_DB.clubs.find(c=>c.id===id) : window.LOCAL_DB.electives.find(e=>e.id===id);
+            const typeStr = type === 'club' ? 'ชุมนุม' : 'วิชาเพิ่มเติม';
+            const actions = `
+                <button onclick="closeModal()" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition text-sm">ยกเลิก</button>
+                <button onclick="processWithdraw('${type}', '${id}')" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm" id="btn-confirm-withdraw">ยืนยันถอน</button>
+            `;
+            showModal(`ยืนยันการถอน`, `คุณแน่ใจหรือไม่ที่จะถอนการลงทะเบียน ${typeStr} <strong>${data.name}</strong>?`, 'error', actions);
+        };
+
+        window.processWithdraw = async (type, id) => {
+            if(!auth.currentUser) return;
+            const btn = document.getElementById('btn-confirm-withdraw');
+            if(btn) { btn.disabled = true; btn.textContent = "กำลังประมวลผล..."; }
+
+            try {
+                const collectionName = type === 'club' ? 'clubs' : 'electives';
+                const docRef = dbPath(collectionName, id);
+                const docSnap = await getDoc(docRef);
+                
+                if(docSnap.exists()) {
+                    const currentCount = docSnap.data().current;
+                    await updateDoc(docRef, { current: Math.max(0, currentCount - 1) });
+                }
+
+                const userUpdate = {};
+                if(type === 'club') { userUpdate.clubId = null; userUpdate.clubRegTime = null; }
+                else { 
+                    const enrolled = window.currentUser.enrolledElectives || [];
+                    userUpdate.enrolledElectives = enrolled.filter(e => e.id !== id); 
+                }
+                await updateDoc(dbPath('users', window.currentUser.natId), userUpdate);
+
+                closeModal();
+            } catch (e) {
+                console.error(e);
+                closeModal(); showModal('ข้อผิดพลาด', 'ไม่สามารถถอนรายวิชาได้', 'error');
+            }
+        };
+
+    </script>
+</body>
+</html>
